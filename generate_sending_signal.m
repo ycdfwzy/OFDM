@@ -1,4 +1,4 @@
-function [signal] = generate_sending_signal(data)
+function signal = generate_sending_signal(data)
 %SENDER 此处显示有关此函数的摘要
 %   data should be a binary array  size:n*1
 %   return signal that will be sended
@@ -6,8 +6,8 @@ function [signal] = generate_sending_signal(data)
 
 %% Parameters
 
-R = 1e5; % [bits/sec]
-duration = 0.128; % [sec]
+R = 1e3; % [bits/sec]
+duration = 12.8; % [sec]
 DataL = R*duration/2;  % Data length in symbols
 NFFT = 128;
 
@@ -24,11 +24,12 @@ cyclic_prefix_signal = [];
 
 %% Raised cosine filter design
 
-shape = 'Raised Cosine';
+% shape = 'Raised Cosine';
 % Specifications of the raised cosine filter with given order in symbols
-rcosSpec = fdesign.pulseshaping(sampsPerSym, shape, 'Nsym,beta', Nsym, beta);
-rcosFlt = design(rcosSpec);
-rcosFlt.Numerator = rcosFlt.Numerator / max(rcosFlt.Numerator);
+% b = rcosdesign(beta, Nsym, sampsPerSym);
+% rcosSpec = fdesign.pulseshaping(sampsPerSym, shape, 'Nsym,beta', Nsym, beta);
+% rcosFlt = design(rcosSpec);
+% rcosFlt.Numerator = rcosFlt.Numerator / max(rcosFlt.Numerator);
 
 %% modulate
 
@@ -40,14 +41,14 @@ modulated_data = qammod(dec_data, 4);
 for i = 1:length(modulated_data)/NFFT
     ifft_signal = ifft(modulated_data((i-1)*NFFT+1:i*NFFT));
     % cyclic prefix
-    prefix = zeros(NFFT+L, 1);
-    prefix(1:L) = ifft_signal(end-L+1:end);
-    prefix(L+1:end) = ifft_signal;
+    prefix = [ifft_signal(end-L+1:end); ifft_signal];
     cyclic_prefix_signal = [cyclic_prefix_signal; prefix];
 end
 
 %% D/A
-signal_complex = filter(rcosFlt, upsample([cyclic_prefix_signal; zeros(Nsym/2,1)], sampsPerSym));
+% signal_complex = filter(rcosFlt, upsample([cyclic_prefix_signal; zeros(Nsym/2,1)], sampsPerSym));
+% signal_complex = upfirdn(cyclic_prefix_signal, b, sampsPerSym);
+signal_complex = rcupflt([cyclic_prefix_signal; zeros(Nsym/2,1)]);
 fltDelay = Nsym / (2*R); % Filter group delay, since raised cosine filter is linear phase and symmetric.
 signal_complex = signal_complex(fltDelay*Fs+1:end); % Correct for propagation delay by removing filter transients
 

@@ -1,12 +1,12 @@
-function [data] = decode_received_signal(received_signal)
+function data = decode_received_signal(received_signal)
 %DECODE_RECEIVED_SIGNAL 此处显示有关此函数的摘要
 %   return decoded data from received data
 %   此处显示详细说明
 
 %% Parameters
 
-R = 1e5; % [bits/sec]
-duration = 0.128; % [sec]
+R = 1e3; % [bits/sec]
+duration = 12.8; % [sec]
 DataL = R*duration/2;  % Data length in symbols
 NFFT = 128;
 
@@ -24,18 +24,21 @@ fltDelay = Nsym / (2*R); % Filter group delay, since raised cosine filter is lin
 
 %% Raised cosine filter design
 
-shape = 'Raised Cosine';
-% Specifications of the raised cosine filter with given order in symbols
-rcosSpec = fdesign.pulseshaping(sampsPerSym, shape, 'Nsym,beta', Nsym, beta);
-rcosFlt = design(rcosSpec);
-rcosFlt.Numerator = rcosFlt.Numerator / max(rcosFlt.Numerator);
+% b = rcosdesign(beta, Nsym, sampsPerSym);
+% shape = 'Raised Cosine';
+% % Specifications of the raised cosine filter with given order in symbols
+% rcosSpec = fdesign.pulseshaping(sampsPerSym, shape, 'Nsym,beta', Nsym, beta);
+% rcosFlt = design(rcosSpec);
+% rcosFlt.Numerator = rcosFlt.Numerator / max(rcosFlt.Numerator);
 
 %% A/D
 t = (0 : length(received_signal)-1) / Fs;
 signal_complex = received_signal.*cos(2*pi*f1*t) - 1i * received_signal.*sin(2*pi*f1*t);
 
-filtered_signal = filter(rcosFlt, [signal_complex.'; zeros(fltDelay*Fs,1)]); 
-reconstructed_signal = downsample(filtered_signal, sampsPerSym);
+% filtered_signal = filter(rcosFlt, [signal_complex.'; zeros(fltDelay*Fs,1)]); 
+% reconstructed_signal = downsample(filtered_signal, sampsPerSym);
+% reconstructed_signal = upfirdn(signal_complex.', b, 1, sampsPerSym);
+reconstructed_signal = rcfltdn([signal_complex.'; zeros(fltDelay*Fs,1)]);
 reconstructed_signal = reconstructed_signal(Nsym/2+1:end); % Correct for propagation delay by removing filter transients
 
 %% Serial to Parallel
