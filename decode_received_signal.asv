@@ -47,7 +47,6 @@ end
 [~, start_Index] = mink(tmp, 100);
 data = [];
 for idx = 1:length(start_Index)
-    disp(['start index: ', int2str(start_Index(idx))]);
     received_signal = received_signal(start_Index(idx): end);
     t = (0 : length(received_signal)-1) / Fs;
     signal_complex = received_signal.*cos(2*pi*f1*t) - 1i * received_signal.*sin(2*pi*f1*t);
@@ -60,7 +59,7 @@ for idx = 1:length(start_Index)
 
     %% Serial to Parallel
     % fft_signal = zeros(int32(NFFT*length(reconstructed_signal)/(NFFT+L)), 1);
-    re_calc = false;
+    re_calc = true;
     data = [];
     for i = 1:length(reconstructed_signal)/(NFFT+L)
         tmp = reconstructed_signal((i-1)*(NFFT+L)+1 : i*(NFFT+L));
@@ -76,7 +75,6 @@ for idx = 1:length(start_Index)
             data_cur(k*2)   = data_cur_(k, 2);
         end
         if (i == 1) && sum(xor(start_flag, data_cur)) >= 2
-            re_calc = true;
             break;
         end
         if sum(xor(end_flag, data_cur)) < 2
@@ -84,10 +82,7 @@ for idx = 1:length(start_Index)
         end
         data = [data; data_cur];
     end
-    if re_calc
-        continue;
-    end
-    break;
+    
 end
 data = data(NFFT*2+1: end);
 % 
